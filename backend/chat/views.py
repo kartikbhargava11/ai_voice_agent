@@ -21,7 +21,7 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
     # details=False means this endpoint acts on the whole collection, not a specific chat ID
     # this endpoint only accepts post requests
     # changes the URL slug name to fetch-chat -> /chat/fetch-chat [POST]
-    @action(details=False, methods=['post'], url_path='fetch-chat')
+    @action(detail=False, methods=['post'], url_path='fetch-chat')
     def chat(self, request):
         # extract data from the incoming request payload
         user_message = request.data.get('message')

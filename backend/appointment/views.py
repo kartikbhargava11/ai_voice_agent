@@ -18,7 +18,7 @@ class AppointmentViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provide
     parser_classes = [FormParser, JSONParser] # limits the backend to only accept data send as JSON or url-encoded forms
 
     # action decorator creates a custom routing path inside the viewset, acts on the whole collection, accepts only post request and changes the URL slug to new-booking
-    @action(details=False, methods=['post'], url_path='new-booking')
+    @action(detail=False, methods=['post'], url_path='new-booking')
     def appointment(self, request):
         # extract data from the incoming request payload
         appointment_date = request.data.get('appointment_date')

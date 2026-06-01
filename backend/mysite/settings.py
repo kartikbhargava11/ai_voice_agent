@@ -27,6 +27,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+]
 
 # Application definition
 
@@ -35,6 +39,7 @@ INSTALLED_APPS = [ # registers all the active components of the project
     'leads.apps.LeadsConfig', # links to 'leads' app configuration
     'chat.apps.ChatConfig', # links to 'chat' app configuration
     'appointment.apps.AppointmentConfig', # links to 'appointment' app configuration
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,6 +49,7 @@ INSTALLED_APPS = [ # registers all the active components of the project
 ]
 
 MIDDLEWARE = [ # a pipeline of security and session handlers that process every request and response
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

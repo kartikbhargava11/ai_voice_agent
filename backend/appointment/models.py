@@ -15,5 +15,7 @@ class Appointment(models.Model):
     appointment_time = models.TimeField()
     status = models.CharField(choices=_status_choices)
     calendar_event_id = models.CharField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     
