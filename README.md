@@ -41,13 +41,13 @@ OPENAI_API_KEY=<your_openai_api_key>
 ```sh
 docker-compose build --no-cache
 ```
-#### Start the Application
+#### Start the Containers/Application
 ```sh
-docker-compose start
+docker-compose up
 ```
-#### Close the Application
+#### Close the Containers/Application
 ```sh
-docker-compose start
+docker-compose down
 ```
 
 #### For Django
