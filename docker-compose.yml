@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: ai_backend
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - '8000:8000'
+    # for development only
+    # for production images should be immutable.
+    volumes:
+      - ./backend:/app # mounts physical folder into the container's /app folder. If changes were made on our machine, the container sees it immediately and restarts itself without us needing to rebuild the image. 
+    env_file:
+      - .env
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ai_frontend
+    command: sh -c "npm run dev -- --host 0.0.0.0"
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
