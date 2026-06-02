@@ -5,17 +5,89 @@
 ## Tools Required
 #### 1. Python 3.13.0
 #### 2. Node.js >23.0.0
-#### 3. n8n
-#### 4. Open AI
-
+#### 3. Docker (optional)
+#### 4. n8n
+#### 5. OpenAI API Key
 
 ## Frameworks Required
 #### 1. Django >=6.0.5
 #### 2. Django REST Framework >=3.17.1
 #### 3. Vue.js >=3.0.5
 
+## Commands to clone the project and spin it up
 
-## Commands to set up frontend
+#### Clone the project into a desired destination directory
+```sh
+git clone https://github.com/kartikbhargava11/ai_voice_agent.git
+```
+#### Move to the project directory
+```sh
+cd ai_voice_agent
+```
+#### Create a .env file
+```sh
+touch .env
+```
+#### Create a .env file
+```sh
+touch .env
+```
+#### Generate OpenAI API Key from the OpenAI Developer Dashboard and save it in .env like the following
+```sh
+OPENAI_API_KEY=<your_openai_api_key>
+```
+
+#### Build the Docker Containers from scratch without cached layers to ensure everything is up-to-date
+```sh
+docker-compose build --no-cache
+```
+#### Start the Application
+```sh
+docker-compose start
+```
+#### Close the Application
+```sh
+docker-compose start
+```
+
+#### For Django
+
+##### Command to create the migration files
+```sh
+docker compose exec backend python manage.py makemigrations
+```
+##### Command to apply the migrations
+```sh
+docker compose exec backend python manage.py migrate
+```
+##### Verify migration status
+```sh
+docker compose exec backend python manage.py showmigrations
+```
+
+#### Alternative commands to run migrations from inside docker container
+
+##### See running containers
+```sh
+docker compose ps
+```
+
+###### Open a shell inside backend directory
+```sh
+docker compose exec backend sh
+```
+
+##### Then, run
+
+```sh
+python manage.py makemigrations
+```
+```sh
+python manage.py migrate
+```
+
+
+## Without docker? Set up the project with the following commands
 
 #### Install all the packages in the frontend folder 
 ```sh
@@ -25,8 +97,6 @@ npm install
 ```sh
 npm run dev
 ```
-
-## Commands to set up backend
 
 #### Create the virtual environment in the backend folder
 
