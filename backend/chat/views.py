@@ -25,6 +25,7 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
     def chat(self, request):
         # extract data from the incoming request payload
         user_message = request.data.get('message')
+        state = request.data.get('state', {})
 
         # if 'message' key is missing, computation stops and returns bad request error
         if not user_message:
@@ -34,7 +35,13 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
             )
         
         # if 'message' exists, business logic is exectuted
-        result = handle_chat_message(user_message=user_message)
+        result, error = handle_chat_message(user_message=user_message, state=state)
+
+        if error:
+            return Response(
+                {'error': error},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         # send the result back to the client/user with http code 201 confirming chat response was created successfully
         return Response(

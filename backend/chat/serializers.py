@@ -7,6 +7,6 @@ from .models import Chat
 class ChatSerializer(serializers.ModelSerializer):
     class Meta: # provides the instructions for the serializer
         model = Chat # ties the serializer directly to Chat database model
-        fields = ['id', 'message', 'created_at', 'updated_at'] # specifies the exact db columns that will be exposed through the API
+        fields = '__all__' # specifies the exact db columns that will be exposed through the API
 
         

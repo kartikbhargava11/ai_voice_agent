@@ -15,9 +15,20 @@
 #### 3. Vue.js >=3.0.5
 
 
-## Project Setup
+## Commands to set up frontend
 
-#### Create the virtual environment
+#### Install all the packages in the frontend folder 
+```sh
+npm install
+```
+#### Run the server 
+```sh
+npm run dev
+```
+
+## Commands to set up backend
+
+#### Create the virtual environment in the backend folder
 
 ```sh
 python3 -m venv ./venv
@@ -42,10 +53,10 @@ django-admin startproject mysite .
 
 ##### Creates an isolated application module inside the project
 ```sh
-python manage.py startapp app_name
+python manage.py startapp <app_name>
 ```
 
-##### Looks at models.py files, checks what column exists, and compares them against the last saved state. It creates a new human-readable python file inside app_name/migrations/ folder. That file contains structural blueprint needed to build the schemas.
+##### Looks at models.py files, checks what column exists, and compares them against the last saved state. It creates a new human-readable python file inside <app_name>/migrations/ folder. That file contains structural blueprint needed to build the schemas.
 ```sh
 python manage.py makemigrations
 ```
@@ -59,6 +70,29 @@ python manage.py migrate
 ```sh
 python manage.py runserver
 ```
+
+
+#### Opens an interactive Python interpreter with the current Django project's environment and settings preloaded
+```sh
+python manage.py shell
+```
+#### Explore the database API. Django provides a rich database lookup API that's entirely driven by keyword arguments.
+```sh
+Chat.objects.all()
+```
+```sh
+Chat.objects.filter(id=1)
+Chat.objects.filter(pk=1)
+```
+```sh
+Chat.objects.filter(message__startswith='Hi')
+```
+```sh
+from django.utils import timezone
+current_year = timezone.now().year
+Chat.objects.filter(created_at__year=current_year)
+```
+
 
 
 
