@@ -28,9 +28,10 @@ cd ai_voice_agent
 ```sh
 touch .env
 ```
-#### Generate OpenAI API Key from the OpenAI Developer Dashboard and save it in .env like the following
-```sh
+#### You gonna need the following to run the project
+```
 OPENAI_API_KEY=<your_openai_api_key>
+N8N_BOOKING_WEBHOOK_URL=<webbook_node_url>
 ```
 
 #### Build the Docker Containers from scratch without cached layers to ensure everything is up-to-date
@@ -148,6 +149,8 @@ Chat.objects.all()
 ```
 ```sh
 Chat.objects.filter(id=1)
+```
+```sh
 Chat.objects.filter(pk=1)
 ```
 ```sh
@@ -155,7 +158,11 @@ Chat.objects.filter(message__startswith='Hi')
 ```
 ```sh
 from django.utils import timezone
+```
+```sh
 current_year = timezone.now().year
+```
+```sh
 Chat.objects.filter(created_at__year=current_year)
 ```
 
