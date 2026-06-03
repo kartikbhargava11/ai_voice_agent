@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR.parent / ".env") # find .env in the parent directory
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') # fetching OPENAI_API_KEY from the .env
-
+N8N_BOOKING_WEBHOOK_URL = os.getenv('N8N_BOOKING_WEBHOOK_URL')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -44,6 +44,7 @@ INSTALLED_APPS = [ # registers all the active components of the project
     'leads.apps.LeadsConfig', # links to 'leads' app configuration
     'chat.apps.ChatConfig', # links to 'chat' app configuration
     'appointment.apps.AppointmentConfig', # links to 'appointment' app configuration
+    'automation.apps.AutomationConfig',  # links to 'automation' app configuration
     'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',

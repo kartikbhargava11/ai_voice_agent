@@ -28,10 +28,6 @@ cd ai_voice_agent
 ```sh
 touch .env
 ```
-#### Create a .env file
-```sh
-touch .env
-```
 #### Generate OpenAI API Key from the OpenAI Developer Dashboard and save it in .env like the following
 ```sh
 OPENAI_API_KEY=<your_openai_api_key>

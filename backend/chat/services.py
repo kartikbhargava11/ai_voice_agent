@@ -1,5 +1,7 @@
 from appointment.services import handle_booking
 from leads.services import handle_leads
+from automation.services import trigger_booking_automation
+
 from .llm_service import extract_receptionist_data
 
 REQUIRED_FIELDS = [
@@ -9,6 +11,8 @@ REQUIRED_FIELDS = [
     'appointment_date',
     'appointment_time'
 ]
+
+
 
 def default_state():
     return {
@@ -59,8 +63,17 @@ def handle_chat_message(user_message, state=None):
         appointment_date=state['appointment_date'],
         appointment_time=state['appointment_time']
     )
-    print(type(lead))
-    print(type(booking))
+    
+    try:
+        automation_result = trigger_booking_automation(
+            lead=lead,
+            booking=booking
+        )
+    except Exception as e:
+        automation_result = {
+            'status':'failed',
+            'error': str(e)
+        }
 
     return {
         "reply": f"Perfect {state['customer_name']}. Your appointment has been booked for {state['appointment_date']} at {state['appointment_time']}.",
@@ -69,5 +82,6 @@ def handle_chat_message(user_message, state=None):
         "state": state,
         "lead_id": lead.id,
         "booking_id": booking.id,
+        'automation': automation_result
     }, error
 
