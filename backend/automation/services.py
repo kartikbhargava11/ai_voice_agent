@@ -1,6 +1,14 @@
 import requests
 from django.conf import settings
 
+def normalize_indian_phone(phone):
+    phone = str(phone).replace(" ", "").replace("+", "")
+    
+    if len(phone) == 10:
+        return "91" + phone
+
+    return phone
+
 def trigger_booking_automation(lead, booking):
     payload = {
         'lead_id': lead.id,

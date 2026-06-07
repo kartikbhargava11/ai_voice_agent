@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import api from '@/plugins/axios'
-import Avatar from '@/components/Avatar.vue'
+import ChatBubble from '@/components/ChatBubble.vue'
 
 const payload = ref(
     {
@@ -24,27 +24,18 @@ const sendMessage = async () => {
         alert("Empty Response")
         return
     }
-
-
     isLoading.value = true
-
     messages.value.push({
         role: 'user',
         text: payload.value.message
     })
-
-    
-
     try {
         const response = await api.post('/chat/fetch-chat/', payload.value)
-
         messages.value.push({
             role: 'AI',
             text: response.data.reply
-        })        
-
+        })
         payload.value.state = response.data.state
-
     } catch (error) {
         console.log(error)
     } finally {
@@ -58,10 +49,7 @@ const sendMessage = async () => {
     <div class="grid grid-cols-12 py-8">
         <div class="col-span-12 md:col-span-6 md:col-start-4 lg:col-span-4 lg:col-start-5">
             <div class="rounded-lg bg-slate-100 p-4 shadow-xl/20">
-                <div v-for="(msg, index) in messages" :key="index" class="rounded-md p-2 flex flex-col justify-center" :class="msg.role == 'user' ? 'text-blue-700 items-end' : 'items-start'">
-                    <Avatar :role="msg.role"/>
-                    <p>{{ msg.text }}</p>
-                </div>
+                <ChatBubble v-for="(msg, index) in messages" :key="index" :msg="msg" />
                 <form @submit.prevent="sendMessage">
                     <div>
                         <label for="message" class="block text-sm/6 font-medium">Message</label>

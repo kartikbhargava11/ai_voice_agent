@@ -19,7 +19,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR.parent / ".env") # find .env in the parent directory
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') # fetching OPENAI_API_KEY from the .env
+
 N8N_BOOKING_WEBHOOK_URL = os.getenv('N8N_BOOKING_WEBHOOK_URL')
+
+
+WHATSAPP_ACCESS_TOKEN=os.getenv('WHATSAPP_ACCESS_TOKEN')
+WHATSAPP_PHONE_NUMBER_ID=os.getenv('WHATSAPP_PHONE_NUMBER_ID')
+WHATSAPP_BASE_ENDPOINT=os.getenv('WHATSAPP_BASE_ENDPOINT')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/

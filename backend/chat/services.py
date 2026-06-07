@@ -1,6 +1,8 @@
 from appointment.services import handle_booking
 from leads.services import handle_leads
+
 from automation.services import trigger_booking_automation
+from automation.whatsapp import send_whatsapp_confirmation
 
 from .llm_service import extract_receptionist_data
 
@@ -11,8 +13,6 @@ REQUIRED_FIELDS = [
     'appointment_date',
     'appointment_time'
 ]
-
-
 
 def default_state():
     return {
@@ -74,6 +74,8 @@ def handle_chat_message(user_message, state=None):
             'status':'failed',
             'error': str(e)
         }
+    
+    whatsapp_result = send_whatsapp_confirmation(lead, booking)
 
     return {
         "reply": f"Perfect {state['customer_name']}. Your appointment has been booked for {state['appointment_date']} at {state['appointment_time']}.",
@@ -82,6 +84,7 @@ def handle_chat_message(user_message, state=None):
         "state": state,
         "lead_id": lead.id,
         "booking_id": booking.id,
-        'automation': automation_result
+        "automation": automation_result,
+        "whatsapp_result": whatsapp_result
     }, error
 
