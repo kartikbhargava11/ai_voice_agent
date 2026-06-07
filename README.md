@@ -30,8 +30,16 @@ touch .env
 ```
 #### You gonna need the following to run the project
 ```
-OPENAI_API_KEY=<your_openai_api_key>
-N8N_BOOKING_WEBHOOK_URL=<webbook_node_url>
+# OPENAI API KEY FROM THE DEVELOPER DASHBOARD
+OPENAI_API_KEY=
+
+# N8N WEBHOOK TRIGGER NODE PRODUCTION/TESTING ENDPOINT
+N8N_BOOKING_WEBHOOK_URL=
+
+# WHATSAPP CLOUD API
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_BASE_ENDPOINT=https://graph.facebook.com/v25.0/
 ```
 
 #### Build the Docker Containers from scratch without cached layers to ensure everything is up-to-date
@@ -68,13 +76,12 @@ docker compose exec backend python manage.py showmigrations
 ```sh
 docker compose ps
 ```
-
-###### Open a shell inside backend directory
+##### Open a shell inside backend directory
 ```sh
 docker compose exec backend sh
 ```
 
-##### Then, run
+###### Then, run
 
 ```sh
 python manage.py makemigrations
