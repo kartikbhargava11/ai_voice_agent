@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR.parent / ".env") # find .env in the parent directory
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') # fetching OPENAI_API_KEY from the .env
 
-N8N_BOOKING_WEBHOOK_URL = os.getenv('N8N_BOOKING_WEBHOOK_URL')
+WEBHOOK_TRIGGER_URL = os.getenv('WEBHOOK_TRIGGER_URL')
 
 
 WHATSAPP_ACCESS_TOKEN=os.getenv('WHATSAPP_ACCESS_TOKEN')

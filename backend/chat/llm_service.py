@@ -91,9 +91,15 @@ def extract_receptionist_data(user_message, state):
             temperature=0,
         )
     except Exception as e:
-        error = f'An error occured: {e}'
+        error = {
+            'error': True,
+            'error_message': f'An error occured: {e}'
+        }
+        return error
     else:
         content = response.choices[0].message.content
-        return json.loads(content), error
+
+        # Convert Python dictionary to JSON string
+        return json.loads(content)
     
-    return None, error
+    

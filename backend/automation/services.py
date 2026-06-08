@@ -18,11 +18,12 @@ def trigger_booking_automation(lead, booking):
         'lead_score': lead.lead_score,
         'appointment_id': booking.id,
         'appointment_date': str(booking.appointment_date),
-        'appointment_time': str(booking.appointment_time)
+        'appointment_time': str(booking.appointment_time),
+        'appointment_datetime': f"{booking.appointment_date}T{booking.appointment_time}:00",
     }
 
     response = requests.post(
-        settings.N8N_BOOKING_WEBHOOK_URL,
+        settings.WEBHOOK_TRIGGER_URL,
         json=payload,
         timeout=10,
         headers={

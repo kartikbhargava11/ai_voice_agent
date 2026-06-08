@@ -35,11 +35,11 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
             )
         
         # if 'message' exists, business logic is exectuted
-        result, error = handle_chat_message(user_message=user_message, state=state)
+        result = handle_chat_message(user_message=user_message, state=state)
 
-        if error:
+        if result.get('error'):
             return Response(
-                {'error': error},
+                result,
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

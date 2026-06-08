@@ -1,18 +1,23 @@
 ## Custom AI Voice Receptionist for Appointment Booking & CRM Automation
 
-####  This project is a custom AI voice receptionist that handles inbound calls, qualifies leads, books appointments, updates CRM records, and sends automated confirmations. It uses Twilio for phone calls, OpenAI Realtime API for live conversation, Django for backend tool calling, n8n for workflow automation, Airtable as CRM, Google Calendar for scheduling, and Gmail for confirmation emails.
+####  This project is a custom AI voice receptionist that handles inbound calls, qualifies leads, books appointments, updates records, and sends automated confirmations. It uses Twilio for phone calls, OpenAI Realtime API for live conversation, Django for backend tool calling, n8n for workflow automation, Google Sheet as CRM, Google Calendar for scheduling, and WhatsApp API for confirmation messages.
+
+## Installations Required
+#### 1. [Python >=3.13.0] (https://www.python.org/)
+#### 2. [Node.js >=23.0.0] (https://nodejs.org/en)
+#### 3. [Docker Desktop] (https://www.docker.com/products/docker-desktop/)
+
+## Frameworks Used
+#### 4. [Django >=6.0.5] (https://www.djangoproject.com/)
+#### 5. [Django REST Framework >=3.17.1] (https://www.django-rest-framework.org/)
+#### 6. [Vue.js >=3.0.5] (https://vuejs.org/)
 
 ## Tools Required
-#### 1. Python 3.13.0
-#### 2. Node.js >23.0.0
-#### 3. Docker (optional)
-#### 4. n8n
-#### 5. OpenAI API Key
-
-## Frameworks Required
-#### 1. Django >=6.0.5
-#### 2. Django REST Framework >=3.17.1
-#### 3. Vue.js >=3.0.5
+#### 1. [n8n (Commercial or Self-Hosted)] (https://n8n.io/)
+#### 2. [OpenAI API Key] (https://platform.openai.com/login)
+#### 3. [Whatsapp Cloud API] (https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started)
+#### 4. Gmail Account (to access Google Sheets and Google Calendar)
+#### 5. Airtable or Notion (If don't prefer Spreadsheets)
 
 ## Commands to clone the project and spin it up
 
@@ -34,7 +39,7 @@ touch .env
 OPENAI_API_KEY=
 
 # N8N WEBHOOK TRIGGER NODE PRODUCTION/TESTING ENDPOINT
-N8N_BOOKING_WEBHOOK_URL=
+WEBHOOK_TRIGGER_URL=
 
 # WHATSAPP CLOUD API
 WHATSAPP_ACCESS_TOKEN=

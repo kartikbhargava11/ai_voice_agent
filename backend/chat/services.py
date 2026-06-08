@@ -28,10 +28,10 @@ def handle_chat_message(user_message, state=None):
     if not state:
         state = default_state()
 
-    ai_result, error = extract_receptionist_data(user_message=user_message, state=state)
+    ai_result = extract_receptionist_data(user_message=user_message, state=state)
 
-    if error:
-        return ai_result, error
+    if ai_result.get('error'):
+        return ai_result
 
     extracted_fields = ai_result.get('extracted_fields', {})
 
@@ -50,7 +50,7 @@ def handle_chat_message(user_message, state=None):
             "next_step": f"collect_{missing_fields[0]}",
             "missing_fields": missing_fields,
             "state": state,
-        }, error
+        }
 
     lead = handle_leads(
         customer_name=state['customer_name'],
@@ -84,7 +84,7 @@ def handle_chat_message(user_message, state=None):
         "state": state,
         "lead_id": lead.id,
         "booking_id": booking.id,
-        "automation": automation_result,
-        "whatsapp_result": whatsapp_result
-    }, error
+        "crm_automation_result": automation_result,
+        "whatsapp_notification_result": whatsapp_result
+    }
 
