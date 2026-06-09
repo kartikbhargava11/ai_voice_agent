@@ -39,6 +39,6 @@ def send_whatsapp_confirmation(lead, booking):
         return response.json()
 
     return {
-        "error": True,
+        "status": 'failed',
         "error_message": error
     }

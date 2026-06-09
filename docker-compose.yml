@@ -24,3 +24,20 @@ services:
       - /app/node_modules
     depends_on:
       - backend
+  n8n: # new docker service
+    image: n8nio/n8n # docker will download official n8n image
+    container_name: ai_n8n # friendly container name
+    ports:
+      - '5678:5678' 
+    environment:
+      - N8N_HOST=localhost # inject variables into the container
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http # for production, https:// can be used behind a reverse proxy
+      - GENERIC_TIMEZONE=Asia/Kolkata # indian timezone
+      - TZ=Asia/Kolkata
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true # security check
+      - N8N_RUNNERS_ENABLED=true # new execution runners
+      - N8N_SECURE_COOKIE=false # for development only
+    volumes:
+      - ./n8n_data:/home/node/.n8n # stores credentials 
+    # restart: unless-stopped # for production only

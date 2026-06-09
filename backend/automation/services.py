@@ -1,4 +1,5 @@
 import requests
+from requests.exceptions import HTTPError
 from django.conf import settings
 
 def normalize_indian_phone(phone):
@@ -10,6 +11,7 @@ def normalize_indian_phone(phone):
     return phone
 
 def trigger_booking_automation(lead, booking):
+
     payload = {
         'lead_id': lead.id,
         'customer_name': lead.customer_name,
@@ -19,21 +21,33 @@ def trigger_booking_automation(lead, booking):
         'appointment_id': booking.id,
         'appointment_date': str(booking.appointment_date),
         'appointment_time': str(booking.appointment_time),
-        'appointment_datetime': f"{booking.appointment_date}T{booking.appointment_time}:00",
+        'phoned_at': str(lead.created_at)
     }
 
-    response = requests.post(
-        settings.WEBHOOK_TRIGGER_URL,
-        json=payload,
-        timeout=10,
-        headers={
-            'Content-Type':'application/json'
-        }
-    )
+    try:
+        response = requests.post(
+            settings.WEBHOOK_TRIGGER_URL,
+            json=payload,
+            timeout=10,
+            headers={
+                'Content-Type':'application/json'
+            }
+        )
+        response.raise_for_status()
 
-    response.raise_for_status()
+    except Exception as e:
+        error = f'{e}'
+    else:
+        # no exception raised
+        # return the response from the webhook
+        return {
+            'status': 'success',
+            'response': response.text
+        }
+    
 
     return {
-        'status':'success',
-        'n8n_response': response.text
+        'status': 'failed',
+        'error_message': error,
     }
+    

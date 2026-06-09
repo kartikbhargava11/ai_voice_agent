@@ -10,7 +10,6 @@ def extract_receptionist_data(user_message, state):
     today = date.today().isoformat()
     day_name = datetime.now().strftime('%A')
     time_24 = datetime.now().strftime('%H:%M')
-    error = None
 
     SYSTEM_PROMPT = f"""
     You are a warm, helpful AI receptionist for a dental clinic.
@@ -78,8 +77,6 @@ def extract_receptionist_data(user_message, state):
     "reply": "short and natural receptionist reply"
     }}
     """
-
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -91,14 +88,12 @@ def extract_receptionist_data(user_message, state):
             temperature=0,
         )
     except Exception as e:
-        error = {
-            'error': True,
-            'error_message': f'An error occured: {e}'
+        return {
+            'error_status': True,
+            'error_message': f'{e}'
         }
-        return error
     else:
         content = response.choices[0].message.content
-
         # Convert Python dictionary to JSON string
         return json.loads(content)
     
