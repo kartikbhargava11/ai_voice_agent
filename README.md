@@ -11,13 +11,13 @@
 #### 4. [Django >=6.0.5](https://www.djangoproject.com/)
 #### 5. [Django REST Framework >=3.17.1](https://www.django-rest-framework.org/)
 #### 6. [Vue.js >=3.0.5](https://vuejs.org/)
+#### 1. [n8n (Community Edition)](https://n8n.io/)
 
 ## Tools Required
-#### 1. [n8n (Commercial or Self-Hosted)](https://n8n.io/)
-#### 2. [OpenAI API Key](https://platform.openai.com/login)
-#### 3. [Whatsapp Cloud API](https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started)
-#### 4. Gmail Account (to access Google Sheets and Google Calendar)
-#### 5. Airtable or Notion (If don't prefer Spreadsheets)
+#### 1. [OpenAI API Key](https://platform.openai.com/login)
+#### 2. [Whatsapp Cloud API](https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started)
+#### 3. Gmail Account (to access Google Sheets and Google Calendar)
+#### 4. Airtable or Notion (If don't prefer Spreadsheets)
 
 ## Commands to clone the project and spin it up
 
@@ -49,27 +49,39 @@ WHATSAPP_BASE_ENDPOINT=https://graph.facebook.com/v25.0/
 
 #### Build the Docker Containers from scratch without cached layers to ensure everything is up-to-date
 ```sh
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 #### Start the Containers/Application
 ```sh
-docker-compose up
+docker compose up
 ```
 #### Close the Containers/Application
 ```sh
-docker-compose down
+docker compose down
 ```
 
-#### For Django
+#### For Django 
+
+##### Command to install a new package
+```sh
+docker compose exec backend pip install requests celery
+```
+
+##### Command to update requirements.txt file
+```sh
+docker compose exec backend pip freeze > requirements.txt
+```
 
 ##### Command to create the migration files
 ```sh
 docker compose exec backend python manage.py makemigrations
 ```
+
 ##### Command to apply the migrations
 ```sh
 docker compose exec backend python manage.py migrate
 ```
+
 ##### Verify migration status
 ```sh
 docker compose exec backend python manage.py showmigrations
