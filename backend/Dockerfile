@@ -28,4 +28,4 @@ COPY . /app/
 # container will be listening for incoming web traffic on this port
 EXPOSE 8000
 
-CMD ["gunicorn", "mysite.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn mysite.wsgi:application --bind 0.0.0.0:8000"]
