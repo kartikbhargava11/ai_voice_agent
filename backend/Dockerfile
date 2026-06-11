@@ -27,3 +27,5 @@ COPY . /app/
 # open default port for flask web routing access
 # container will be listening for incoming web traffic on this port
 EXPOSE 8000
+
+CMD ["gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000"]
