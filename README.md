@@ -1,25 +1,28 @@
 ## Custom AI Voice Receptionist for Appointment Booking & CRM Automation
+This project is a custom AI voice receptionist that handles inbound calls, qualifies leads, books appointments, updates records, and sends automated confirmations. It uses Twilio for phone calls, OpenAI Realtime API for live conversation, Django for backend tool calling, n8n for workflow automation, Google Sheet as CRM, Google Calendar for scheduling, and WhatsApp API for confirmation messages.
 
-####  This project is a custom AI voice receptionist that handles inbound calls, qualifies leads, books appointments, updates records, and sends automated confirmations. It uses Twilio for phone calls, OpenAI Realtime API for live conversation, Django for backend tool calling, n8n for workflow automation, Google Sheet as CRM, Google Calendar for scheduling, and WhatsApp API for confirmation messages.
+## [Live Demo](https://ai-voice-agent-blond.vercel.app/)
 
-## Installations Required
+## For Local Setup
+
+### Installations Required
 #### [1. Python >=3.13.0](https://www.python.org/)
 #### [2. Node.js >=23.0.0](https://nodejs.org/en)
 #### [3. Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
-## Frameworks Used
+### Frameworks Used
 #### [1. Django >=6.0.5](https://www.djangoproject.com/)
 #### [2. Django REST Framework >=3.17.1](https://www.django-rest-framework.org/)
 #### [3. Vue.js >=3.0.5](https://vuejs.org/)
 #### [4. n8n (Community Edition)](https://n8n.io/)
 
-## Tools Required
+### Tools Required
 #### [1. OpenAI API Key](https://platform.openai.com/login)
 #### [2. Whatsapp Cloud API](https://developers.facebook.com/documentation/business-messaging/whatsapp/get-started)
 #### 3. Gmail Account (to access Google Sheets and Google Calendar)
 #### 4. Airtable or Notion (If you don't prefer Spreadsheets)
 
-## Commands to clone the project and spin it up
+### Commands to clone the project and spin it up
 
 #### Clone the project into a desired destination directory
 ```sh
@@ -36,15 +39,30 @@ touch .env
 #### You gonna need the following to run the project
 ```
 # OPENAI API KEY FROM THE DEVELOPER DASHBOARD
-OPENAI_API_KEY=
+OPENAI_API_KEY=<INSERT_HERE>
 
-# N8N WEBHOOK TRIGGER NODE PRODUCTION/TESTING ENDPOINT
-WEBHOOK_TRIGGER_URL=
+# DB URL
+DATABASE_URL=postgresql://ai_user:ai_password@postgres:5432/ai_agent
+POSTGRES_DB=ai_agent
+POSTGRES_USER=ai_user
+POSTGRES_PASSWORD=ai_password
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+
+# N8N WEBHOOK TRIGGER NODE INSIDE DOCKER CONTAINER
+WEBHOOK_TRIGGER_URL=http://n8n:5678/webhook-test/<INSERT_HERE>
 
 # WHATSAPP CLOUD API
-WHATSAPP_ACCESS_TOKEN=
-WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_ACCESS_TOKEN=<INSERT_HERE>
+WHATSAPP_PHONE_NUMBER_ID=<INSERT_HERE>
 WHATSAPP_BASE_ENDPOINT=https://graph.facebook.com/v25.0/
+
+# DJANGO
+DEBUG=True
+ALLOWED_HOSTS=
+CORS_ALLOWED_ORIGINS=
+
+VITE_API_URL=http://127.0.0.1:8000/api/v1
 ```
 
 #### Build the Docker Containers from scratch without cached layers to ensure everything is up-to-date
@@ -108,7 +126,7 @@ python manage.py migrate
 ```
 
 
-## Without docker? Set up the project with the following commands
+### Without docker? Set up the project with the following commands
 
 #### Install all the packages in the frontend folder 
 ```sh
