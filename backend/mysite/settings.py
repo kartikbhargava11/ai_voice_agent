@@ -34,14 +34,14 @@ WHATSAPP_BASE_ENDPOINT=os.getenv('WHATSAPP_BASE_ENDPOINT')
 SECRET_KEY = 'django-insecure-r_2i67hjluy@9**6x=jljbhvz+3y)&sa=d=n-ywkch+=cs&8t#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = []
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://127.0.0.1:5173'
-]
+CORS_ALLOWED_ORIGINS = os.getenv(
+    'CORS_ALLOWED_ORIGINS',
+    'http://localhost:5173,http://127.0.0.1:5173'
+).split(',')
 
 # Application definition
 
