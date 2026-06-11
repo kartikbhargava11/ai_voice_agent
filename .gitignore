@@ -82,3 +82,6 @@ pnpm-debug.log*
 
 # n8n
 n8n_data/
+
+# postgres
+postgres_data/

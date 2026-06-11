@@ -16,7 +16,8 @@ const router = createRouter({
       component: Dashboard
     },
   ],
-  linkExactActiveClass: 'bg-gray-950/50 text-gray-300 hover:bg-white/5 hover:text-white'
+  linkActiveClass: 'text-gray-300 hover:bg-white/5 hover:text-white',
+  linkExactActiveClass: 'bg-gray-950/50'
 })
 
 export default router

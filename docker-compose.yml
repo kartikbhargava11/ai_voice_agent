@@ -1,4 +1,15 @@
 services:
+  postgres:
+    image: postgres:16
+    container_name: ai_postgres
+    environment:
+      - POSTGRES_DB=ai_agent
+      - POSTGRES_USER=ai_user
+      - POSTGRES_PASSWORD=ai_password
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
   backend:
     build:
       context: ./backend
@@ -12,6 +23,8 @@ services:
       - ./backend:/app # mounts physical folder into the container's /app folder. If changes were made on our machine, the container sees it immediately and restarts itself without us needing to rebuild the image. 
     env_file:
       - .env
+    depends_on:
+      - postgres
   frontend:
     build:
       context: ./frontend
@@ -43,3 +56,4 @@ services:
     volumes:
       - ./n8n_data:/home/node/.n8n # stores credentials 
     # restart: unless-stopped # for production only
+  

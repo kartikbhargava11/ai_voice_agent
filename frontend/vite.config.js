@@ -12,6 +12,8 @@ export default defineConfig({
     vueDevTools(),
     tailwindcss()
   ],
+  envDir: fileURLToPath(new URL('../', import.meta.url)), // point vite to the root folder to check the .env file
+  // envPrefix: ['', 'VITE_'],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
