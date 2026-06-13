@@ -1,7 +1,8 @@
 ## Custom AI Voice Receptionist for Appointment Booking & CRM Automation
 This project is a custom AI voice receptionist that handles inbound calls, qualifies leads, books appointments, updates records, and sends automated confirmations. It uses Twilio for phone calls, OpenAI Realtime API for live conversation, Django for backend tool calling, n8n for workflow automation, Google Sheet as CRM, Google Calendar for scheduling, and WhatsApp API for confirmation messages.
 
-## [Live Demo](https://ai-voice-agent-blond.vercel.app/)
+## Live Demo
+[Click Me 👆](https://ai-voice-agent-blond.vercel.app/)
 
 ## For Local Setup
 
