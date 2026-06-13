@@ -14,7 +14,7 @@ services:
     build:
       context: ./backend
     container_name: ai_backend
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000" # this overrides Dockerfile CMD.
     ports:
       - '8000:8000'
     # for development only
