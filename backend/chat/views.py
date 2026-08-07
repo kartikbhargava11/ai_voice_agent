@@ -26,6 +26,7 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
         # extract data from the incoming request payload
         user_message = request.data.get('message')
         state = request.data.get('state', {})
+        idempotency_key = request.headers.get('Idempotency-Key') or request.data.get('idempotency_key')
 
         # if 'message' key is missing, computation stops and returns bad request error
         if not user_message:
@@ -35,18 +36,19 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
             )
         
         # if 'message' exists, business logic is exectuted
-        result = handle_chat_message(user_message=user_message, state=state)
+        result = handle_chat_message(
+            user_message=user_message,
+            state=state,
+            idempotency_key=idempotency_key,
+        )
 
-        if result.get('error'):
-            return Response(
-                result,
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        response_status = result.pop('http_status', None)
+        if response_status is None:
+            response_status = status.HTTP_500_INTERNAL_SERVER_ERROR if result.get('error') else status.HTTP_201_CREATED
 
         # send the result back to the client/user with http code 201 confirming chat response was created successfully
         return Response(
             result,
-            status=status.HTTP_201_CREATED
+            status=response_status
         )
         
-

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from pathlib import Path
+from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 
 
@@ -21,6 +22,8 @@ load_dotenv(BASE_DIR.parent / ".env") # find .env in the parent directory
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') # fetching OPENAI_API_KEY from the .env
 
 WEBHOOK_TRIGGER_URL = os.getenv('WEBHOOK_TRIGGER_URL')
+N8N_CANCEL_WEBHOOK_URL = os.getenv('N8N_CANCEL_WEBHOOK_URL')
+N8N_CRM_WEBHOOK_URL = os.getenv('N8N_CRM_WEBHOOK_URL')
 
 
 WHATSAPP_ACCESS_TOKEN=os.getenv('WHATSAPP_ACCESS_TOKEN')
@@ -42,6 +45,8 @@ CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
     'http://localhost:5173,http://127.0.0.1:5173'
 ).split(',')
+
+CORS_ALLOW_HEADERS = (*default_headers, 'idempotency-key')
 
 # Application definition
 

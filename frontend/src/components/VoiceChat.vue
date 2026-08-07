@@ -7,6 +7,7 @@ const aiReply = ref('')
 const isListening = ref(false)
 const isLoading = ref(false)
 const conversationEnded = ref(false)
+const idempotencyKey = ref(crypto.randomUUID())
 
 const state = ref({
     customer_name: null,
@@ -51,10 +52,11 @@ const startListening = () => {
 const sendToBackend = async (message) => {
     isLoading.value = true
     try {
-        const response = await api.post('/chat/fetch-chat/', { // post request to django endpoint to send the user message and state for backend logic purposes
-            message,
-            state: state.value
-        })
+        const response = await api.post(
+            '/chat/fetch-chat/',
+            { message, state: state.value },
+            { headers: { 'Idempotency-Key': idempotencyKey.value } }
+        )
         aiReply.value = response.data.reply // saving the reply from the AI to display it to the client
         
 
@@ -68,10 +70,22 @@ const sendToBackend = async (message) => {
         if (response.data.state) { // save the state, to send it to later API calls. It is just for backend logic
             state.value = response.data.state
         }
+
+        if (response.data.reset_idempotency_key) {
+            idempotencyKey.value = crypto.randomUUID()
+        }
         
         speak(aiReply.value) // send the AI reply to WebSpeech API
     } catch (error) {
-        aiReply.value = 'Something went wrong'
+        const errorData = error.response?.data
+        aiReply.value = errorData?.reply || errorData?.error_message || 'Something went wrong'
+        if (errorData?.state) {
+            state.value = errorData.state
+        }
+        if (errorData?.reset_idempotency_key) {
+            idempotencyKey.value = crypto.randomUUID()
+        }
+        speak(aiReply.value)
     } finally {
         isLoading.value = false
     }

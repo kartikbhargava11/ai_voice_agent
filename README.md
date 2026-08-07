@@ -53,6 +53,13 @@ POSTGRES_PORT=5432
 # N8N WEBHOOK TRIGGER NODE INSIDE DOCKER CONTAINER
 WEBHOOK_TRIGGER_URL=http://n8n:5678/webhook-test/<INSERT_HERE>
 
+# OPTIONAL: a dedicated n8n webhook that cancels a calendar event. If omitted,
+# WEBHOOK_TRIGGER_URL receives both create_booking and cancel_booking actions.
+N8N_CANCEL_WEBHOOK_URL=http://n8n:5678/webhook/<INSERT_HERE>
+
+# OPTIONAL: a dedicated post-booking Google Sheets CRM sync workflow.
+N8N_CRM_WEBHOOK_URL=http://n8n:5678/webhook/<INSERT_HERE>
+
 # WHATSAPP CLOUD API
 WHATSAPP_ACCESS_TOKEN=<INSERT_HERE>
 WHATSAPP_PHONE_NUMBER_ID=<INSERT_HERE>
@@ -78,6 +85,45 @@ docker compose up
 ```sh
 docker compose down
 ```
+
+### Reliable booking workflow
+
+The booking endpoint sends an `idempotency_key` to n8n. The n8n workflow must
+use that value as a unique key when creating a calendar event, so a retried HTTP
+request returns the original event instead of creating a duplicate.
+
+For `action: create_booking`, Django only accepts this explicit success response:
+
+```json
+{
+  "status": "available",
+  "calendar_event_id": "google-calendar-event-id"
+}
+```
+
+An unavailable slot must return `{"status": "unavailable"}` and can include a
+`suggested_slots` array. Timeouts, malformed responses, missing event IDs, and
+every other status are treated as failures and no local booking is created.
+
+If the local database transaction fails after n8n creates an event, Django sends
+`action: cancel_booking` with the event ID and idempotency key. Configure
+`N8N_CANCEL_WEBHOOK_URL` for a dedicated cancellation workflow, or handle both
+actions in the workflow configured by `WEBHOOK_TRIGGER_URL`.
+
+WhatsApp confirmations and failed calendar compensations are stored as durable
+jobs. Docker Compose runs `automation_worker` automatically. In production, run
+the same backend image as a separate worker with:
+
+```sh
+python manage.py process_automation_jobs --loop
+```
+
+After the local transaction commits, the CRM job sends `action: sync_crm` with
+`lead_id`, `lead_source`, `created_at`, customer details, appointment data,
+and the calendar event ID. The workflow must return `{"status": "synced"}` or
+`{"status": "success"}`. Keep the Google Sheets phone column formatted as Plain
+text; phone numbers are identifiers and numeric formatting can remove `+` and
+leading zeroes.
 
 #### For Django 
 
@@ -208,8 +254,4 @@ current_year = timezone.now().year
 ```sh
 Chat.objects.filter(created_at__year=current_year)
 ```
-
-
-
-
 

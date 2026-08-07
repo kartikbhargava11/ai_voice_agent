@@ -18,6 +18,7 @@ const payload = ref(
 
 const messages = ref([])
 const isLoading = ref(false)
+const idempotencyKey = ref(crypto.randomUUID())
 
 
 const sendMessage = async () => {
@@ -32,14 +33,29 @@ const sendMessage = async () => {
         text: payload.value.message
     })
     try {
-        const response = await api.post('/chat/fetch-chat/', payload.value)
+        const response = await api.post('/chat/fetch-chat/', payload.value, {
+            headers: { 'Idempotency-Key': idempotencyKey.value }
+        })
         messages.value.push({
             role: 'AI',
             text: response.data.reply
         })
         payload.value.state = response.data.state
+        if (response.data.reset_idempotency_key) {
+            idempotencyKey.value = crypto.randomUUID()
+        }
     } catch (error) {
-        console.log(error)
+        const errorData = error.response?.data
+        messages.value.push({
+            role: 'AI',
+            text: errorData?.reply || errorData?.error_message || 'Something went wrong'
+        })
+        if (errorData?.state) {
+            payload.value.state = errorData.state
+        }
+        if (errorData?.reset_idempotency_key) {
+            idempotencyKey.value = crypto.randomUUID()
+        }
     } finally {
         payload.value.message = ''
         isLoading.value = false

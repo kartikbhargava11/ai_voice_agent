@@ -4,6 +4,12 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Lead(models.Model):
+    class SourceList(models.TextChoices):
+        WEB_VOICE = 'WEB_VOICE', _('Web voice assistant')
+        WEB_CHAT = 'WEB_CHAT', _('Web chat')
+        PHONE = 'PHONE', _('Phone call')
+        MANUAL = 'MANUAL', _('Manual entry')
+
     class ServiceList(models.TextChoices):
         DENTAL_CHECKUP = 'DENTAL CHECKUP', _('Dental Health Exam and Checkup')
         TEETH_CLEANING = 'TEETH CLEANING', _('Teeth Cleanings')
@@ -21,6 +27,11 @@ class Lead(models.Model):
 
     customer_name = models.CharField(max_length=100) # creates a standard text column in the db
     customer_phone = models.CharField(max_length=12) # creates a standard text column in the db
+    lead_source = models.CharField(
+        choices=SourceList,
+        default=SourceList.WEB_VOICE,
+        max_length=20,
+    )
     service_needed = models.CharField( # creates a text column if a mapping is given
         choices=ServiceList,
         max_length=25
@@ -32,7 +43,7 @@ class Lead(models.Model):
     # )
     created_at = models.DateTimeField(auto_now_add=True) # this will store the data and time when a 'Lead' is created
     updated_at = models.DateTimeField(auto_now=True) # this will store the data and time when a 'Lead' is updated
-    
+
     @property
     def lead_score(self):
         if self.service_needed == self.ServiceList.ROOT_CANAL_TREATMENT:
@@ -40,4 +51,3 @@ class Lead(models.Model):
         if self.service_needed == self.ServiceList.MOUTH_GUARD:
             return 8
         return 5
-    

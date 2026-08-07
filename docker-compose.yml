@@ -25,6 +25,18 @@ services:
       - .env
     depends_on:
       - postgres
+  automation_worker:
+    build:
+      context: ./backend
+    container_name: ai_automation_worker
+    command: sh -c "python manage.py migrate --noinput && python manage.py process_automation_jobs --loop"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - n8n
   frontend:
     build:
       context: ./frontend
@@ -51,7 +63,6 @@ services:
       - GENERIC_TIMEZONE=Asia/Kolkata # indian timezone
       - TZ=Asia/Kolkata
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true # security check
-      - N8N_RUNNERS_ENABLED=true # new execution runners
       - N8N_SECURE_COOKIE=false # for development only
     volumes:
       - ./n8n_data:/home/node/.n8n # stores credentials 
