@@ -17,6 +17,8 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+LOG_FILE = Path(os.getenv('LOG_FILE', BASE_DIR / 'logs' / 'backend.log'))
+LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(BASE_DIR.parent / ".env") # find .env in the parent directory
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') # fetching OPENAI_API_KEY from the .env
@@ -47,6 +49,7 @@ CORS_ALLOWED_ORIGINS = os.getenv(
 ).split(',')
 
 CORS_ALLOW_HEADERS = (*default_headers, 'idempotency-key')
+CORS_EXPOSE_HEADERS = ['X-Request-ID']
 
 # Application definition
 
@@ -67,6 +70,7 @@ INSTALLED_APPS = [ # registers all the active components of the project
 
 MIDDLEWARE = [ # a pipeline of security and session handlers that process every request and response
     'corsheaders.middleware.CorsMiddleware',
+    'mysite.middleware.RequestLoggingMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -146,3 +150,31 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/' 
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {'()': 'mysite.observability.JsonFormatter'},
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
+        },
+        'rotating_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOG_FILE),
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 5,
+            'formatter': 'json',
+        },
+    },
+    'loggers': {
+        'app': {
+            'handlers': ['console', 'rotating_file'],
+            'level': os.getenv('APP_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}

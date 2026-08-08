@@ -1,3 +1,5 @@
+import json
+import logging
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -5,6 +7,7 @@ from django.test import TestCase
 from appointment.models import Appointment, BookingRequest
 from automation.models import AutomationJob
 from leads.models import Lead
+from mysite.observability import JsonFormatter
 
 from .services import handle_chat_message
 
@@ -24,6 +27,27 @@ def ai_result():
         'extracted_fields': {},
         'reply': 'Let me check that slot.',
     }
+
+
+class LoggingPrivacyTests(TestCase):
+    def test_json_formatter_masks_phone_and_credentials(self):
+        record = logging.LogRecord(
+            name='app.test',
+            level=logging.INFO,
+            pathname=__file__,
+            lineno=1,
+            msg='privacy_check',
+            args=(),
+            exc_info=None,
+        )
+        record.event = 'privacy_check'
+        record.customer_phone = '+49 1234 567890'
+        record.access_token = 'never-log-this'
+
+        result = json.loads(JsonFormatter().format(record))
+
+        self.assertEqual(result['customer_phone'], '******7890')
+        self.assertEqual(result['access_token'], '[REDACTED]')
 
 
 class BookingWorkflowTests(TestCase):

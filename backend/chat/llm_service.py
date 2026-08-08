@@ -1,12 +1,25 @@
 import json
+import logging
+import time
 from datetime import date, datetime
 
 from django.conf import settings
 from openai import OpenAI
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
+logger = logging.getLogger('app.openai')
 
 def extract_receptionist_data(user_message, state):
+    started = time.monotonic()
+    logger.info(
+        'openai_request_started',
+        extra={
+            'event': 'openai_request_started',
+            'model': 'gpt-4o-mini',
+            'known_field_count': sum(bool(value) for value in state.values()),
+            'message_length': len(user_message),
+        },
+    )
     today = date.today().isoformat()
     day_name = datetime.now().strftime('%A')
     time_24 = datetime.now().strftime('%H:%M')
@@ -92,13 +105,44 @@ def extract_receptionist_data(user_message, state):
             temperature=0,
         )
     except Exception as e:
+        logger.warning(
+            'openai_request_failed',
+            extra={
+                'event': 'openai_request_failed',
+                'model': 'gpt-4o-mini',
+                'duration_ms': round((time.monotonic() - started) * 1000),
+                'error_type': type(e).__name__,
+            },
+        )
         return {
             'error_status': True,
             'error_message': f'{e}'
         }
     else:
         content = response.choices[0].message.content
+        logger.info(
+            'openai_request_completed',
+            extra={
+                'event': 'openai_request_completed',
+                'model': 'gpt-4o-mini',
+                'duration_ms': round((time.monotonic() - started) * 1000),
+                'openai_request_id': getattr(response, '_request_id', None),
+            },
+        )
         # Convert Python dictionary to JSON string
-        return json.loads(content)
-    
+        try:
+            return json.loads(content)
+        except (TypeError, json.JSONDecodeError) as exc:
+            logger.warning(
+                'openai_response_invalid',
+                extra={
+                    'event': 'openai_response_invalid',
+                    'error_type': type(exc).__name__,
+                },
+            )
+            return {
+                'error_status': True,
+                'error_message': 'OpenAI returned an invalid structured response.',
+            }
+
     

@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 from datetime import timedelta
 
 from django.db import IntegrityError, transaction
@@ -31,6 +32,7 @@ REQUIRED_FIELDS = [
 ]
 N8N_SUCCESS_STATUS = 'available'
 PROCESSING_LEASE = timedelta(minutes=2)
+logger = logging.getLogger('app.booking')
 
 
 def default_state():
@@ -65,6 +67,10 @@ def _reserve_booking_request(idempotency_key, state):
             }
 
         if booking_request.status == BookingRequest.Status.COMPLETED:
+            logger.info(
+                'booking_idempotent_replay',
+                extra={'event': 'booking_idempotent_replay', 'booking_request_id': booking_request.id},
+            )
             response = dict(booking_request.response_data)
             response['idempotent_replay'] = True
             return None, response
@@ -82,6 +88,14 @@ def _reserve_booking_request(idempotency_key, state):
         booking_request.status = BookingRequest.Status.PROCESSING
         booking_request.error_message = ''
         booking_request.save(update_fields=['status', 'error_message', 'updated_at'])
+        logger.info(
+            'booking_request_reserved',
+            extra={
+                'event': 'booking_request_reserved',
+                'booking_request_id': booking_request.id,
+                'new_request': created,
+            },
+        )
         return booking_request, None
 
 
@@ -94,6 +108,14 @@ def _record_external_failure(booking_request, message):
 
 
 def _compensate_calendar_event(booking_request, calendar_event_id):
+    logger.warning(
+        'calendar_compensation_started',
+        extra={
+            'event': 'calendar_compensation_started',
+            'booking_request_id': booking_request.id,
+            'calendar_event_id': calendar_event_id,
+        },
+    )
     result = cancel_calendar_event_with_n8n(
         calendar_event_id=calendar_event_id,
         idempotency_key=booking_request.idempotency_key,
@@ -103,6 +125,14 @@ def _compensate_calendar_event(booking_request, calendar_event_id):
             status=BookingRequest.Status.FAILED,
             error_message='Local booking failed; calendar event was cancelled.',
             updated_at=timezone.now(),
+        )
+        logger.info(
+            'calendar_compensation_completed',
+            extra={
+                'event': 'calendar_compensation_completed',
+                'booking_request_id': booking_request.id,
+                'result_status': result.get('status'),
+            },
         )
         return result
 
@@ -114,10 +144,21 @@ def _compensate_calendar_event(booking_request, calendar_event_id):
     )
     booking_request.refresh_from_db()
     enqueue_calendar_cancellation(booking_request, calendar_event_id)
+    logger.warning(
+        'calendar_compensation_queued',
+        extra={
+            'event': 'calendar_compensation_queued',
+            'booking_request_id': booking_request.id,
+        },
+    )
     return result
 
 
 def _complete_booking(state, booking_request, calendar_event_id, n8n_result):
+    logger.info(
+        'database_transaction_started',
+        extra={'event': 'database_transaction_started', 'booking_request_id': booking_request.id},
+    )
     try:
         with transaction.atomic():
             locked_request = BookingRequest.objects.select_for_update().get(pk=booking_request.pk)
@@ -155,8 +196,22 @@ def _complete_booking(state, booking_request, calendar_event_id, n8n_result):
             locked_request.response_data = response
             locked_request.error_message = ''
             locked_request.save()
+            logger.info(
+                'database_transaction_completed',
+                extra={
+                    'event': 'database_transaction_completed',
+                    'booking_request_id': locked_request.id,
+                    'lead_id': lead.id,
+                    'appointment_id': booking.id,
+                    'calendar_event_id': calendar_event_id,
+                },
+            )
             return response
     except IntegrityError:
+        logger.warning(
+            'database_slot_conflict',
+            extra={'event': 'database_slot_conflict', 'booking_request_id': booking_request.id},
+        )
         compensation = _compensate_calendar_event(booking_request, calendar_event_id)
         return {
             'reply': 'Sorry, that appointment slot was just booked. Please choose another time.',
@@ -168,7 +223,15 @@ def _complete_booking(state, booking_request, calendar_event_id, n8n_result):
             'compensation_result': compensation,
             'http_status': 409,
         }
-    except Exception:
+    except Exception as exc:
+        logger.exception(
+            'database_transaction_failed',
+            extra={
+                'event': 'database_transaction_failed',
+                'booking_request_id': booking_request.id,
+                'error_type': type(exc).__name__,
+            },
+        )
         compensation = _compensate_calendar_event(booking_request, calendar_event_id)
         return {
             'error': True,
@@ -192,6 +255,14 @@ def handle_chat_message(user_message, state=None, idempotency_key=None):
             state[key] = value
 
     missing_fields = [field for field in REQUIRED_FIELDS if not state.get(field)]
+    logger.info(
+        'booking_details_processed',
+        extra={
+            'event': 'booking_details_processed',
+            'known_fields': [field for field in REQUIRED_FIELDS if state.get(field)],
+            'missing_fields': missing_fields,
+        },
+    )
     if missing_fields:
         return {
             'reply': ai_result.get('reply', 'Please share the missing details.'),
@@ -228,6 +299,14 @@ def handle_chat_message(user_message, state=None, idempotency_key=None):
     n8n_status = n8n_result.get('status')
 
     if n8n_status == 'unavailable':
+        logger.info(
+            'booking_slot_unavailable',
+            extra={
+                'event': 'booking_slot_unavailable',
+                'booking_request_id': booking_request.id,
+                'suggested_slot_count': len(n8n_result.get('suggested_slots', [])),
+            },
+        )
         state['appointment_time'] = None
         suggested_slots = n8n_result.get('suggested_slots', [])
         slots_text = ', '.join(suggested_slots[:3])
@@ -258,6 +337,14 @@ def handle_chat_message(user_message, state=None, idempotency_key=None):
             'n8n did not explicitly confirm the calendar booking.',
         )
         _record_external_failure(booking_request, message)
+        logger.warning(
+            'booking_calendar_not_confirmed',
+            extra={
+                'event': 'booking_calendar_not_confirmed',
+                'booking_request_id': booking_request.id,
+                'result_status': n8n_status,
+            },
+        )
         return {
             'error': True,
             'error_message': 'The calendar could not confirm this booking. No local appointment was created.',

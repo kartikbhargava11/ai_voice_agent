@@ -125,6 +125,31 @@ and the calendar event ID. The workflow must return `{"status": "synced"}` or
 text; phone numbers are identifiers and numeric formatting can remove `+` and
 leading zeroes.
 
+### Application logs
+
+Django writes privacy-safe JSON logs to both the container console and rotating
+files. Local files are:
+
+```text
+backend/logs/backend.log
+backend/logs/automation-worker.log
+```
+
+Follow them with:
+
+```sh
+tail -f backend/logs/backend.log
+tail -f backend/logs/automation-worker.log
+```
+
+Each inbound request gets an `X-Request-ID`. Django passes it to n8n in both the
+HTTP header and JSON payload, stores it with background jobs, and returns it to
+the frontend. Logs include API action, status code, safe response fields,
+duration, database steps, job attempts, and errors. Conversation text, full
+phone numbers, credentials, tokens, and full third-party responses are not
+logged. Log files inside Render containers are temporary, so use Render's
+console logs or an external log service for long-term production history.
+
 #### For Django 
 
 ##### Command to install a new package
@@ -254,4 +279,3 @@ current_year = timezone.now().year
 ```sh
 Chat.objects.filter(created_at__year=current_year)
 ```
-

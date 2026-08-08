@@ -1,39 +1,63 @@
+import logging
 from datetime import timedelta
 
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
+from mysite.observability import request_id, reset_context, set_context
+
 from .models import AutomationJob
 from .services import cancel_calendar_event_with_n8n, sync_lead_to_crm_with_n8n
 from .whatsapp import send_whatsapp_confirmation
 
 
+logger = logging.getLogger('app.jobs')
+
+
 def enqueue_whatsapp_confirmation(appointment):
-    return AutomationJob.objects.get_or_create(
+    job, created = AutomationJob.objects.get_or_create(
         job_type=AutomationJob.JobType.WHATSAPP_CONFIRMATION,
         appointment=appointment,
-        defaults={'run_after': timezone.now()},
-    )[0]
+        defaults={'run_after': timezone.now(), 'payload': {'request_id': request_id()}},
+    )
+    if created:
+        logger.info(
+            'automation_job_queued',
+            extra={'event': 'automation_job_queued', 'job_id': job.id, 'job_type': job.job_type},
+        )
+    return job
 
 
 def enqueue_crm_sync(appointment):
-    return AutomationJob.objects.get_or_create(
+    job, created = AutomationJob.objects.get_or_create(
         job_type=AutomationJob.JobType.CRM_SYNC,
         appointment=appointment,
-        defaults={'run_after': timezone.now()},
-    )[0]
+        defaults={'run_after': timezone.now(), 'payload': {'request_id': request_id()}},
+    )
+    if created:
+        logger.info(
+            'automation_job_queued',
+            extra={'event': 'automation_job_queued', 'job_id': job.id, 'job_type': job.job_type},
+        )
+    return job
 
 
 def enqueue_calendar_cancellation(booking_request, calendar_event_id):
-    return AutomationJob.objects.get_or_create(
+    job, created = AutomationJob.objects.get_or_create(
         job_type=AutomationJob.JobType.CALENDAR_CANCELLATION,
         booking_request=booking_request,
         defaults={
-            'payload': {'calendar_event_id': calendar_event_id},
+            'payload': {'calendar_event_id': calendar_event_id, 'request_id': request_id()},
             'run_after': timezone.now(),
         },
-    )[0]
+    )
+    if created:
+        logger.info(
+            'automation_job_queued',
+            extra={'event': 'automation_job_queued', 'job_id': job.id, 'job_type': job.job_type},
+        )
+    return job
 
 
 def _execute(job):
@@ -76,6 +100,27 @@ def process_next_job():
         job.save(update_fields=['status', 'attempts', 'updated_at'])
 
     try:
+        current_booking_key = (
+            job.booking_request.idempotency_key if job.booking_request_id else None
+        )
+        if not current_booking_key and job.appointment_id:
+            current_booking_key = job.appointment.booking_request.idempotency_key
+    except Exception:
+        current_booking_key = None
+    tokens = set_context(
+        job.payload.get('request_id') or f'job-{job.id}',
+        current_booking_key,
+    )
+    logger.info(
+        'automation_job_started',
+        extra={
+            'event': 'automation_job_started',
+            'job_id': job.id,
+            'job_type': job.job_type,
+            'attempt': job.attempts,
+        },
+    )
+    try:
         _execute(job)
     except Exception as exc:
         job.last_error = str(exc)
@@ -86,8 +131,30 @@ def process_next_job():
             delay_seconds = min(60 * (2 ** (job.attempts - 1)), 3600)
             job.run_after = timezone.now() + timedelta(seconds=delay_seconds)
         job.save(update_fields=['status', 'last_error', 'run_after', 'updated_at'])
+        logger.warning(
+            'automation_job_failed',
+            extra={
+                'event': 'automation_job_failed',
+                'job_id': job.id,
+                'job_type': job.job_type,
+                'attempt': job.attempts,
+                'final_failure': job.status == AutomationJob.Status.FAILED,
+                'error_type': type(exc).__name__,
+            },
+        )
     else:
         job.status = AutomationJob.Status.COMPLETED
         job.last_error = ''
         job.save(update_fields=['status', 'last_error', 'updated_at'])
+        logger.info(
+            'automation_job_completed',
+            extra={
+                'event': 'automation_job_completed',
+                'job_id': job.id,
+                'job_type': job.job_type,
+                'attempt': job.attempts,
+            },
+        )
+    finally:
+        reset_context(tokens)
     return True

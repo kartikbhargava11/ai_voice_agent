@@ -23,6 +23,8 @@ services:
       - ./backend:/app # mounts physical folder into the container's /app folder. If changes were made on our machine, the container sees it immediately and restarts itself without us needing to rebuild the image. 
     env_file:
       - .env
+    environment:
+      - LOG_FILE=/app/logs/backend.log
     depends_on:
       - postgres
   automation_worker:
@@ -34,6 +36,8 @@ services:
       - ./backend:/app
     env_file:
       - .env
+    environment:
+      - LOG_FILE=/app/logs/automation-worker.log
     depends_on:
       - postgres
       - n8n
