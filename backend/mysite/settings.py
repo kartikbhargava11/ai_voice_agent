@@ -55,6 +55,7 @@ CORS_EXPOSE_HEADERS = ['X-Request-ID']
 
 INSTALLED_APPS = [ # registers all the active components of the project
     'rest_framework', # DRF package registration to build the endpoints
+    'drf_spectacular', # generates the OpenAPI schema and Swagger documentation
     'leads.apps.LeadsConfig', # links to 'leads' app configuration
     'chat.apps.ChatConfig', # links to 'chat' app configuration
     'appointment.apps.AppointmentConfig', # links to 'appointment' app configuration
@@ -98,6 +99,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'mysite.wsgi.application'
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'AI Voice Agent API',
+    'DESCRIPTION': 'API for conversations, leads, appointments, and booking automation.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
 
 
 # Database

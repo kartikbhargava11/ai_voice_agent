@@ -6,8 +6,9 @@ from rest_framework import viewsets, status
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 
-from .serializers import ChatSerializer
+from .serializers import ChatRequestSerializer, ChatResponseSerializer, ChatSerializer
 from .models import Chat
 from .services import handle_chat_message
 
@@ -26,6 +27,29 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
     # details=False means this endpoint acts on the whole collection, not a specific chat ID
     # this endpoint only accepts post requests
     # changes the URL slug name to fetch-chat -> /chat/fetch-chat [POST]
+    @extend_schema(
+        summary='Send a message to the voice agent',
+        description=(
+            'Processes one conversation message, updates the collected state, and '
+            'books only after the calendar workflow explicitly confirms success.'
+        ),
+        request=ChatRequestSerializer,
+        parameters=[
+            OpenApiParameter(
+                name='Idempotency-Key',
+                location=OpenApiParameter.HEADER,
+                required=False,
+                type=str,
+                description='A unique key that prevents the same booking being created twice.',
+            ),
+        ],
+        responses={
+            201: ChatResponseSerializer,
+            400: OpenApiResponse(response=ChatResponseSerializer, description='Invalid request'),
+            409: OpenApiResponse(response=ChatResponseSerializer, description='Duplicate or conflicting booking'),
+            503: OpenApiResponse(response=ChatResponseSerializer, description='Calendar workflow unavailable'),
+        },
+    )
     @action(detail=False, methods=['post'], url_path='fetch-chat')
     def chat(self, request):
         # extract data from the incoming request payload
