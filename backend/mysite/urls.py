@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import (
@@ -21,21 +22,40 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from rest_framework.permissions import IsAdminUser
+
+from .auth import ThrottledObtainAuthToken
+from .health import health, readiness
 
 urlpatterns = [
     path('api/v1/', include('leads.urls')),
     path('api/v1/', include('chat.urls')),
     path('api/v1/', include('appointment.urls')),
-    path('api/schema/', SpectacularAPIView.as_view(), name='api-schema'),
+    path('api/v1/automation/', include('automation.urls')),
+    path('api/v1/auth/token/', ThrottledObtainAuthToken.as_view(), name='api-v1-token'),
+    path('api/token/', ThrottledObtainAuthToken.as_view(), name='api-token'),
+    path('health/', health, name='health'),
+    path('health/ready/', readiness, name='readiness'),
+    path(
+        'api/schema/',
+        SpectacularAPIView.as_view(permission_classes=[IsAdminUser]),
+        name='api-schema',
+    ),
     path(
         'api/docs/',
-        SpectacularSwaggerView.as_view(url_name='api-schema'),
+        SpectacularSwaggerView.as_view(
+            url_name='api-schema',
+            permission_classes=[IsAdminUser],
+        ),
         name='swagger-ui',
     ),
     path(
         'api/redoc/',
-        SpectacularRedocView.as_view(url_name='api-schema'),
+        SpectacularRedocView.as_view(
+            url_name='api-schema',
+            permission_classes=[IsAdminUser],
+        ),
         name='redoc',
     ),
-    path('admin/', admin.site.urls),
+    path(settings.ADMIN_URL, admin.site.urls),
 ]

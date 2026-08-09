@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from .serializers import LeadSerializer
 from .models import Lead
@@ -10,6 +11,7 @@ from .services import handle_leads
 class LeadViewSet(viewsets.ModelViewSet): # ModelViewSet parent class provides automatic CRUD actions for the Lead model
     queryset = Lead.objects.all().order_by('-created_at') # fetches all the "leads" from the db, sorted by newest first
     serializer_class = LeadSerializer # links the view to serializer to auto handle validation and conversion to/from JSON for CRUD operations
+    permission_classes = [IsAuthenticated]
 
     parser_classes = [FormParser, MultiPartParser, JSONParser] # limits the backend to only accept data send as JSON or url-encoded form or multi-part form
 
@@ -44,7 +46,6 @@ class LeadViewSet(viewsets.ModelViewSet): # ModelViewSet parent class provides a
             result,
             status=status.HTTP_201_CREATED
         )
-
 
 
 

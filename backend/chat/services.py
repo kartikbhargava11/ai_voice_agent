@@ -1,8 +1,10 @@
 import hashlib
 import json
 import logging
+import re
 from datetime import timedelta
 
+from django.core import signing
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -33,6 +35,23 @@ REQUIRED_FIELDS = [
 N8N_SUCCESS_STATUS = 'available'
 PROCESSING_LEASE = timedelta(minutes=2)
 logger = logging.getLogger('app.booking')
+CONFIRMATION_SALT = 'chat.booking-confirmation'
+CONFIRMATION_MAX_AGE_SECONDS = 15 * 60
+YES_ANSWERS = {
+    'yes',
+    'yes please',
+    'yeah',
+    'yep',
+    'confirm',
+    'confirmed',
+    'book it',
+    'go ahead',
+    'correct',
+    'okay',
+    'ok',
+    'please do',
+}
+NO_ANSWERS = {'no', 'nope', 'cancel', 'change it', 'incorrect', 'not correct'}
 
 
 def default_state():
@@ -43,6 +62,58 @@ def _payload_hash(state):
     payload = {field: state.get(field) for field in REQUIRED_FIELDS}
     encoded = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _confirmation_answer(message):
+    normalized = re.sub(r'[^a-z ]', '', str(message).lower()).strip()
+    if normalized in YES_ANSWERS or normalized.startswith('yes '):
+        return True
+    if normalized in NO_ANSWERS or normalized.startswith('no '):
+        return False
+    return None
+
+
+def _confirmation_summary(state):
+    service = str(state['service_needed']).replace('_', ' ').lower()
+    phone_digits = re.sub(r'\D', '', str(state['customer_phone']))
+    phone_ending = phone_digits[-3:] if phone_digits else 'unknown'
+    return (
+        f"Book a {service} for {state['customer_name']} on "
+        f"{human_date(state['appointment_date'])} at {human_time(state['appointment_time'])} "
+        f"using the phone number ending in {phone_ending}? Please say yes or no."
+    )
+
+
+def _confirmation_token(state):
+    payload = {field: state.get(field) for field in REQUIRED_FIELDS}
+    return signing.dumps(payload, salt=CONFIRMATION_SALT, compress=True)
+
+
+def _confirmation_is_valid(state):
+    token = state.get('_booking_confirmation_token')
+    if not token:
+        return False
+    try:
+        confirmed_payload = signing.loads(
+            token,
+            salt=CONFIRMATION_SALT,
+            max_age=CONFIRMATION_MAX_AGE_SECONDS,
+        )
+    except signing.BadSignature:
+        return False
+    current_payload = {field: state.get(field) for field in REQUIRED_FIELDS}
+    return confirmed_payload == current_payload
+
+
+def _request_booking_confirmation(state):
+    state['awaiting_booking_confirmation'] = True
+    state['_booking_confirmation_token'] = _confirmation_token(state)
+    return {
+        'reply': _confirmation_summary(state),
+        'intent': 'book_appointment',
+        'next_step': 'confirm_booking',
+        'state': state,
+    }
 
 
 def _reserve_booking_request(idempotency_key, state):
@@ -245,7 +316,34 @@ def _complete_booking(state, booking_request, calendar_event_id, n8n_result):
 
 def handle_chat_message(user_message, state=None, idempotency_key=None):
     state = state or default_state()
-    ai_result = extract_receptionist_data(user_message=user_message, state=state)
+    confirmation_accepted = False
+
+    if state.get('awaiting_booking_confirmation'):
+        answer = _confirmation_answer(user_message)
+        if answer is False:
+            state['awaiting_booking_confirmation'] = False
+            state.pop('_booking_confirmation_token', None)
+            return {
+                'reply': 'No problem. What booking detail would you like to change?',
+                'intent': 'book_appointment',
+                'next_step': 'change_booking_details',
+                'state': state,
+            }
+        if answer is not True:
+            return {
+                'reply': 'Please say yes to confirm this booking or no to change it.',
+                'intent': 'book_appointment',
+                'next_step': 'confirm_booking',
+                'state': state,
+            }
+        if not _confirmation_is_valid(state):
+            return _request_booking_confirmation(state)
+        state['awaiting_booking_confirmation'] = False
+        state.pop('_booking_confirmation_token', None)
+        confirmation_accepted = True
+        ai_result = {'intent': 'book_appointment', 'extracted_fields': {}, 'reply': ''}
+    else:
+        ai_result = extract_receptionist_data(user_message=user_message, state=state)
 
     if ai_result.get('error_status', False):
         return {**ai_result, 'error': True, 'http_status': 503}
@@ -281,6 +379,9 @@ def handle_chat_message(user_message, state=None, idempotency_key=None):
             'missing_fields': ['appointment_time'],
             'state': state,
         }
+
+    if not confirmation_accepted:
+        return _request_booking_confirmation(state)
 
     if not idempotency_key or len(idempotency_key) > 128:
         return {

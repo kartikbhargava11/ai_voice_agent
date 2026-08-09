@@ -2,7 +2,7 @@ import time
 
 from django.core.management.base import BaseCommand
 
-from automation.jobs import process_next_job
+from automation.jobs import mark_worker_alive, process_next_job
 
 
 class Command(BaseCommand):
@@ -14,6 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         while True:
+            mark_worker_alive()
             processed = process_next_job()
             if not options['loop']:
                 break

@@ -4,6 +4,11 @@ from django.utils.translation import gettext_lazy as _
 
 
 class Lead(models.Model):
+    class Status(models.TextChoices):
+        NEW = 'NEW', _('New')
+        CONVERTED = 'CONVERTED', _('Converted')
+        LOST = 'LOST', _('Lost')
+
     class SourceList(models.TextChoices):
         WEB_VOICE = 'WEB_VOICE', _('Web voice assistant')
         WEB_CHAT = 'WEB_CHAT', _('Web chat')
@@ -31,6 +36,11 @@ class Lead(models.Model):
         choices=SourceList,
         default=SourceList.WEB_VOICE,
         max_length=20,
+    )
+    status = models.CharField(
+        choices=Status,
+        default=Status.NEW,
+        max_length=12,
     )
     service_needed = models.CharField( # creates a text column if a mapping is given
         choices=ServiceList,

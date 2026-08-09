@@ -61,3 +61,11 @@ class AutomationJob(models.Model):
                 name='unique_booking_request_automation_job',
             ),
         ]
+
+
+class AutomationWorkerHeartbeat(models.Model):
+    name = models.CharField(max_length=64, unique=True, default='default')
+    last_seen_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f'{self.name}: {self.last_seen_at.isoformat()}'

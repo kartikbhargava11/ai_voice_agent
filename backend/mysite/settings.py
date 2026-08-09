@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 from corsheaders.defaults import default_headers
 from dotenv import load_dotenv
 
@@ -21,11 +23,19 @@ LOG_FILE = Path(os.getenv('LOG_FILE', BASE_DIR / 'logs' / 'backend.log'))
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 load_dotenv(BASE_DIR.parent / ".env") # find .env in the parent directory
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') # fetching OPENAI_API_KEY from the .env
 
 WEBHOOK_TRIGGER_URL = os.getenv('WEBHOOK_TRIGGER_URL')
 N8N_CANCEL_WEBHOOK_URL = os.getenv('N8N_CANCEL_WEBHOOK_URL')
 N8N_CRM_WEBHOOK_URL = os.getenv('N8N_CRM_WEBHOOK_URL')
+N8N_HEALTH_URL = os.getenv('N8N_HEALTH_URL', 'http://n8n:5678/healthz')
+N8N_WEBHOOK_SECRET = os.getenv(
+    'N8N_WEBHOOK_SECRET',
+    'development-n8n-secret' if DEBUG else '',
+)
+N8N_HEALTH_TIMEOUT_SECONDS = float(os.getenv('N8N_HEALTH_TIMEOUT_SECONDS', '3'))
+AUTOMATION_WORKER_STALE_SECONDS = int(os.getenv('AUTOMATION_WORKER_STALE_SECONDS', '30'))
 
 
 WHATSAPP_ACCESS_TOKEN=os.getenv('WHATSAPP_ACCESS_TOKEN')
@@ -36,12 +46,16 @@ WHATSAPP_BASE_ENDPOINT=os.getenv('WHATSAPP_BASE_ENDPOINT')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-r_2i67hjluy@9**6x=jljbhvz+3y)&sa=d=n-ywkch+=cs&8t#'
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'unsafe-development-only-key'
+    else:
+        raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set when DEBUG=False.')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ADMIN_URL = os.getenv('ADMIN_URL', 'admin/').strip('/') + '/'
 
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
@@ -55,6 +69,7 @@ CORS_EXPOSE_HEADERS = ['X-Request-ID']
 
 INSTALLED_APPS = [ # registers all the active components of the project
     'rest_framework', # DRF package registration to build the endpoints
+    'rest_framework.authtoken', # token authentication for protected API routes
     'drf_spectacular', # generates the OpenAPI schema and Swagger documentation
     'leads.apps.LeadsConfig', # links to 'leads' app configuration
     'chat.apps.ChatConfig', # links to 'chat' app configuration
@@ -102,6 +117,24 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': os.getenv('API_ANON_RATE', '60/min'),
+        'user': os.getenv('API_USER_RATE', '300/min'),
+        'chat': os.getenv('API_CHAT_RATE', '20/min'),
+        'auth': os.getenv('API_AUTH_RATE', '10/min'),
+    },
 }
 
 SPECTACULAR_SETTINGS = {

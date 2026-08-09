@@ -1,6 +1,16 @@
 <script setup>
-import AppButton from '@/components/AppButton.vue'
+import { useRouter } from 'vue-router'
 
+import AppButton from '@/components/AppButton.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const router = useRouter()
+
+const logout = async () => {
+  auth.logout()
+  await router.push({ name: 'Login' })
+}
 </script>
 <template>
   <nav class="relative bg-mauve-950/80 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-px after:bg-white/10">
@@ -29,12 +39,12 @@ import AppButton from '@/components/AppButton.vue'
             <div class="flex space-x-4">
               <!-- Current: "bg-gray-950/50 text-white", Default: "text-gray-300 hover:bg-white/5 hover:text-white" -->
               <router-link to="/" class="rounded-md px-3 py-2 text-sm font-medium text-white">Home</router-link>
-              <router-link to="/dashboard" class="rounded-md px-3 py-2 text-sm font-medium text-white">Dashboard</router-link>
+              <router-link v-if="auth.isAuthenticated" to="/dashboard" class="rounded-md px-3 py-2 text-sm font-medium text-white">Dashboard</router-link>
             </div>
           </div>
         </div>
         <div class="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
-          <AppButton type="button" class="relative rounded-full p-1 text-gray-400 hover:text-white focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500">
+          <AppButton v-if="auth.isAuthenticated" type="button" class="relative rounded-full p-1 text-gray-400 hover:text-white focus:outline-2 focus:outline-offset-2 focus:outline-indigo-500">
             <template #svg-icon>
               <span class="absolute -inset-1.5"></span>
               <span class="sr-only">View notifications</span>
@@ -44,22 +54,21 @@ import AppButton from '@/components/AppButton.vue'
             </template>
           </AppButton>
 
-          <!-- Profile dropdown -->
-          <el-dropdown class="relative ml-3">
-            <AppButton class="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
-              <template #svg-icon>
-                <span class="absolute -inset-1.5"></span>
-                <span class="sr-only">Open user menu</span>
-                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80" alt="" class="size-8 rounded-full bg-gray-800 outline -outline-offset-1 outline-white/10" />
-              </template>
-            </AppButton>
-
-            <el-menu anchor="bottom end" popover class="w-48 origin-top-right rounded-md bg-gray-800 py-1 outline -outline-offset-1 outline-white/10 transition transition-discrete [--anchor-gap:--spacing(2)] data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in">
-              <a href="#" class="block px-4 py-2 text-sm text-gray-300 focus:bg-white/5 focus:outline-hidden">Your profile</a>
-              <a href="#" class="block px-4 py-2 text-sm text-gray-300 focus:bg-white/5 focus:outline-hidden">Settings</a>
-              <a href="#" class="block px-4 py-2 text-sm text-gray-300 focus:bg-white/5 focus:outline-hidden">Sign out</a>
-            </el-menu>
-          </el-dropdown>
+          <button
+            v-if="auth.isAuthenticated"
+            type="button"
+            class="ml-4 rounded-md border border-white/20 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-white/10"
+            @click="logout"
+          >
+            Sign out
+          </button>
+          <router-link
+            v-else
+            to="/login"
+            class="rounded-md bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-indigo-400"
+          >
+            Staff login
+          </router-link>
         </div>
       </div>
     </div>
@@ -68,7 +77,9 @@ import AppButton from '@/components/AppButton.vue'
       <div class="space-y-1 px-2 pt-2 pb-3">
         <!-- Current: "bg-gray-950/50 text-white", Default: "text-gray-300 hover:bg-white/5 hover:text-white" -->
         <router-link to="/" class="block rounded-md px-3 py-2 text-base font-medium text-white">Home</router-link>
-        <router-link to="/dashboard" class="block rounded-md px-3 py-2 text-base font-medium text-white">Dashboard</router-link>
+        <router-link v-if="auth.isAuthenticated" to="/dashboard" class="block rounded-md px-3 py-2 text-base font-medium text-white">Dashboard</router-link>
+        <router-link v-else to="/login" class="block rounded-md px-3 py-2 text-base font-medium text-white">Staff login</router-link>
+        <button v-if="auth.isAuthenticated" type="button" class="block w-full rounded-md px-3 py-2 text-left text-base font-medium text-white" @click="logout">Sign out</button>
       </div>
     </el-disclosure>
   </nav>

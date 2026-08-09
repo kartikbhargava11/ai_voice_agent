@@ -11,7 +11,14 @@ logger = logging.getLogger('app.integrations.n8n')
 
 
 def _headers():
-    return {'Content-Type': 'application/json', 'X-Request-ID': request_id()}
+    secret = settings.N8N_WEBHOOK_SECRET
+    if not secret:
+        raise RuntimeError('N8N_WEBHOOK_SECRET is not configured')
+    return {
+        'Content-Type': 'application/json',
+        'X-Request-ID': request_id(),
+        'X-Webhook-Secret': secret,
+    }
 
 
 def _log_result(action, response, started, result):
@@ -162,6 +169,7 @@ def sync_lead_to_crm_with_n8n(lead, appointment):
         'action': 'sync_crm',
         'lead_id': lead.id,
         'lead_source': lead.lead_source,
+        'lead_status': lead.status,
         'created_at': lead.created_at.isoformat(),
         'customer_name': lead.customer_name,
         # Phone numbers intentionally remain strings to preserve + and leading zeroes.
@@ -170,6 +178,7 @@ def sync_lead_to_crm_with_n8n(lead, appointment):
         'appointment_id': appointment.id,
         'appointment_date': appointment.appointment_date.isoformat(),
         'appointment_time': appointment.appointment_time.strftime('%H:%M'),
+        'appointment_status': appointment.status,
         'calendar_event_id': appointment.calendar_event_id,
         'request_id': request_id(),
     }

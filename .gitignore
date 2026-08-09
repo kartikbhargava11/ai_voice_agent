@@ -59,6 +59,7 @@ jspm_packages/
 
 # Build outputs
 /dist/
+/frontend/dist/
 /target/
 
 # Local env files

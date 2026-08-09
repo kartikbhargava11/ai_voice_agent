@@ -12,9 +12,86 @@ const stats = ref({
 const leads = ref([])
 const appointments = ref([])
 const isLoading = ref(false)
+const errorMessage = ref('')
+
+const formatDate = (value) => {
+    if (!value) return '—'
+
+    const [year, month, day] = value.split('-').map(Number)
+    if (!year || !month || !day) return value
+
+    return new Intl.DateTimeFormat('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    }).format(new Date(year, month - 1, day))
+}
+
+const formatTime = (value) => {
+    if (!value) return '—'
+    return value.slice(0, 5)
+}
+
+const sourceLabels = {
+    WEB_VOICE: 'Voice assistant',
+    WEB_CHAT: 'Web chat',
+    PHONE: 'Phone call',
+    MANUAL: 'Manual'
+}
+
+const statusClasses = {
+    NEW: 'bg-blue-100 text-blue-700',
+    CONVERTED: 'bg-green-100 text-green-700',
+    LOST: 'bg-red-100 text-red-700'
+}
+
+const updatingLeadId = ref(null)
+const updatingAppointmentId = ref(null)
+
+const updateLeadStatus = async (lead, status) => {
+    updatingLeadId.value = lead.id
+    errorMessage.value = ''
+    try {
+        const response = await api.patch(`/lead/${lead.id}/`, { status })
+        Object.assign(lead, response.data)
+    } catch (error) {
+        if (error.response?.status !== 401) {
+            errorMessage.value = error.response?.data?.status?.[0]
+                || 'The lead status could not be updated.'
+        }
+    } finally {
+        updatingLeadId.value = null
+    }
+}
+
+const appointmentStatusClasses = {
+    SCHEDULED: 'bg-blue-100 text-blue-700',
+    ATTENDED: 'bg-green-100 text-green-700',
+    MISSED: 'bg-red-100 text-red-700'
+}
+
+const updateAppointmentStatus = async (appointment, status) => {
+    updatingAppointmentId.value = appointment.id
+    errorMessage.value = ''
+    try {
+        const response = await api.patch(
+            `/book-appointment/${appointment.id}/`,
+            { status }
+        )
+        Object.assign(appointment, response.data)
+    } catch (error) {
+        if (error.response?.status !== 401) {
+            errorMessage.value = error.response?.data?.status?.[0]
+                || 'The appointment status could not be updated.'
+        }
+    } finally {
+        updatingAppointmentId.value = null
+    }
+}
 
 const fetchDashboard = async () => {
     isLoading.value = true
+    errorMessage.value = ''
 
     try {
         const leadsResponse = await api.get('/lead/')
@@ -25,7 +102,11 @@ const fetchDashboard = async () => {
 
         stats.value.total_leads = leads.value.length
         stats.value.total_appointments = appointments.value.length
-        stats.value.upcoming_appointments = appointments.value.length
+        const today = new Date().toISOString().slice(0, 10)
+        stats.value.upcoming_appointments = appointments.value.filter(
+            appointment => appointment.status === 'SCHEDULED'
+                && appointment.appointment_date >= today
+        ).length
 
         const totalScore = leads.value.reduce((sum, lead) => {
             return sum + (lead.lead_score || 0)
@@ -33,8 +114,10 @@ const fetchDashboard = async () => {
 
         stats.value.average_lead_score = leads.value.length ? (totalScore / leads.value.length).toFixed(1) : 0
 
-    } catch (e) {
-
+    } catch (error) {
+        if (error.response?.status !== 401) {
+            errorMessage.value = 'The dashboard could not be loaded. Please try again.'
+        }
     } finally {
         isLoading.value = false
     }
@@ -55,6 +138,12 @@ onMounted(fetchDashboard)
             </div>
             <div v-if="isLoading" class="text-slate-600">
                 Loading Dashboard...
+            </div>
+            <div v-else-if="errorMessage" class="rounded-lg bg-red-50 p-4 text-red-700">
+                {{ errorMessage }}
+                <button type="button" class="ml-2 font-semibold underline" @click="fetchDashboard">
+                    Try again
+                </button>
             </div>
             <div v-else>
                 <!-- KPIs -->
@@ -85,7 +174,7 @@ onMounted(fetchDashboard)
                     </div>
                 </div>
                 <!-- Tables -->
-                <div class="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div class="mt-8 grid grid-cols-1 gap-6">
                     <!-- Leads Table -->
                     <div class="rounded-xl bg-white p-5 shadow">
                         <h2 class="mb-4 text-lg font-semibold text-slate-900">
@@ -98,6 +187,8 @@ onMounted(fetchDashboard)
                                         <th class="py-2">Name</th>
                                         <th class="py-2">Phone</th>
                                         <th class="py-2">Service</th>
+                                        <th class="py-2">Source</th>
+                                        <th class="py-2">Status</th>
                                         <th class="py-2">Score</th>
                                     </tr>
                                 </thead>
@@ -111,6 +202,28 @@ onMounted(fetchDashboard)
                                         </td>
                                         <td class="py-3 font-medium text-slate-800">
                                             {{  lead.service_needed }}
+                                        </td>
+                                        <td class="py-3 text-slate-700">
+                                            {{ sourceLabels[lead.lead_source] || lead.lead_source }}
+                                        </td>
+                                        <td class="py-3">
+                                            <div class="flex items-center gap-2">
+                                                <span
+                                                    class="rounded-full px-2 py-1 text-xs font-semibold"
+                                                    :class="statusClasses[lead.status] || statusClasses.NEW"
+                                                >
+                                                    {{ lead.status === 'CONVERTED' ? 'Converted' : lead.status === 'LOST' ? 'Lost' : 'New' }}
+                                                </span>
+                                                <button
+                                                    v-if="lead.status !== 'CONVERTED'"
+                                                    type="button"
+                                                    :disabled="updatingLeadId === lead.id"
+                                                    class="text-xs font-medium text-indigo-600 hover:underline disabled:text-slate-400"
+                                                    @click="updateLeadStatus(lead, lead.status === 'LOST' ? 'NEW' : 'LOST')"
+                                                >
+                                                    {{ updatingLeadId === lead.id ? 'Saving…' : lead.status === 'LOST' ? 'Reopen' : 'Mark lost' }}
+                                                </button>
+                                            </div>
                                         </td>
                                         <td class="py-3 font-medium text-slate-800">
                                             <span
@@ -136,7 +249,9 @@ onMounted(fetchDashboard)
                                         <th class="py-2">Lead</th>
                                         <th class="py-2">Date</th>
                                         <th class="py-2">Time</th>
+                                        <th class="py-2">Status</th>
                                         <th class="py-2">Calendar</th>
+                                        <th class="py-2">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -145,10 +260,18 @@ onMounted(fetchDashboard)
                                             {{  appointment.lead }}
                                         </td>
                                         <td class="py-3 font-medium text-slate-800">
-                                            {{  appointment.appointment_date }}
+                                            {{ formatDate(appointment.appointment_date) }}
                                         </td>
                                         <td class="py-3 font-medium text-slate-800">
-                                            {{  appointment.appointment_time }}
+                                            {{ formatTime(appointment.appointment_time) }}
+                                        </td>
+                                        <td class="py-3">
+                                            <span
+                                                class="rounded-full px-2 py-1 text-xs font-semibold"
+                                                :class="appointmentStatusClasses[appointment.status] || appointmentStatusClasses.SCHEDULED"
+                                            >
+                                                {{ appointment.status === 'ATTENDED' ? 'Attended' : appointment.status === 'MISSED' ? 'Missed' : 'Scheduled' }}
+                                            </span>
                                         </td>
                                         <td class="py-3">
                                             <span
@@ -156,6 +279,35 @@ onMounted(fetchDashboard)
                                                 :class="appointment.calendar_event_id ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'">
                                                 {{ appointment.calendar_event_id ? 'Synced' : 'Pending' }}
                                             </span>
+                                        </td>
+                                        <td class="py-3">
+                                            <div class="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    :disabled="updatingAppointmentId === appointment.id || appointment.status === 'ATTENDED'"
+                                                    class="text-xs font-semibold text-green-700 hover:underline disabled:text-slate-400 disabled:no-underline"
+                                                    @click="updateAppointmentStatus(appointment, 'ATTENDED')"
+                                                >
+                                                    Attended
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    :disabled="updatingAppointmentId === appointment.id || appointment.status === 'MISSED'"
+                                                    class="text-xs font-semibold text-red-700 hover:underline disabled:text-slate-400 disabled:no-underline"
+                                                    @click="updateAppointmentStatus(appointment, 'MISSED')"
+                                                >
+                                                    Missed
+                                                </button>
+                                                <button
+                                                    v-if="appointment.status !== 'SCHEDULED'"
+                                                    type="button"
+                                                    :disabled="updatingAppointmentId === appointment.id"
+                                                    class="text-xs font-semibold text-blue-700 hover:underline disabled:text-slate-400"
+                                                    @click="updateAppointmentStatus(appointment, 'SCHEDULED')"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 </tbody>

@@ -5,6 +5,7 @@ from rest_framework import viewsets, status
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from .serializers import AppointmentSerializer
 from .models import Appointment
@@ -14,6 +15,7 @@ from .services import handle_booking
 class AppointmentViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides auto CRUD actions for the Appointment model
     queryset = Appointment.objects.all().order_by('-created_at') # fetch all the bookings from the db, sorted by the newest first
     serializer_class = AppointmentSerializer # links the view to serializer to auto handle validation and coversion to/from JSON for CRUD operations
+    permission_classes = [IsAuthenticated]
 
     parser_classes = [FormParser, JSONParser] # limits the backend to only accept data send as JSON or url-encoded forms
 

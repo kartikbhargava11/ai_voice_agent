@@ -52,6 +52,8 @@ POSTGRES_PORT=5432
 
 # N8N WEBHOOK TRIGGER NODE INSIDE DOCKER CONTAINER
 WEBHOOK_TRIGGER_URL=http://n8n:5678/webhook-test/<INSERT_HERE>
+N8N_HEALTH_URL=http://n8n:5678/healthz
+N8N_WEBHOOK_SECRET=<INSERT_LONG_RANDOM_VALUE>
 
 # OPTIONAL: a dedicated n8n webhook that cancels a calendar event. If omitted,
 # WEBHOOK_TRIGGER_URL receives both create_booking and cancel_booking actions.
@@ -66,9 +68,11 @@ WHATSAPP_PHONE_NUMBER_ID=<INSERT_HERE>
 WHATSAPP_BASE_ENDPOINT=https://graph.facebook.com/v25.0/
 
 # DJANGO
+DJANGO_SECRET_KEY=<INSERT_A_DIFFERENT_LONG_RANDOM_VALUE>
 DEBUG=True
-ALLOWED_HOSTS=
-CORS_ALLOWED_ORIGINS=
+ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+ADMIN_URL=admin/
 
 VITE_API_URL=http://127.0.0.1:8000/api/v1
 ```
@@ -87,6 +91,18 @@ docker compose down
 ```
 
 ### Reliable booking workflow
+
+When all booking details have been collected, Django returns a spoken summary
+and `next_step: confirm_booking`. No n8n request is made until the customer gives
+a clear yes. The confirmation is signed and expires after 15 minutes; changing
+any booking detail requires a new confirmation.
+
+Every Django request to n8n includes `X-Webhook-Secret`. In the n8n Webhook node,
+set Authentication to Header Auth. Create a Header Auth credential whose header
+name is `X-Webhook-Secret` and whose value exactly matches
+`N8N_WEBHOOK_SECRET`. n8n then rejects requests that do not have the secret. If
+n8n calls Django, use `POST /api/v1/automation/webhook/callback/` and send the
+same header.
 
 The booking endpoint sends an `idempotency_key` to n8n. The n8n workflow must
 use that value as a unique key when creating a calendar event, so a retried HTTP
@@ -149,6 +165,31 @@ duration, database steps, job attempts, and errors. Conversation text, full
 phone numbers, credentials, tokens, and full third-party responses are not
 logged. Log files inside Render containers are temporary, so use Render's
 console logs or an external log service for long-term production history.
+
+### Authentication and health checks
+
+Lead, appointment, and stored-chat APIs require a logged-in Django user or an
+API token. The live customer endpoint `/api/v1/chat/fetch-chat/` remains public
+and is rate limited. Create a token for a user with:
+
+```sh
+docker compose exec backend python manage.py drf_create_token <username>
+```
+
+Send it as `Authorization: Token <token>`. Swagger, ReDoc, and the OpenAPI schema
+require a logged-in staff user. Django admin also requires a staff user and its
+URL can be changed with `ADMIN_URL`.
+
+Health endpoints:
+
+```text
+/health/        Django process is running
+/health/ready/  PostgreSQL, n8n, and the automation worker are ready
+```
+
+Use `/health/` as the Render health-check path. Use `/health/ready/` for
+deployment diagnostics. Production must set `DEBUG=False`, `DJANGO_SECRET_KEY`,
+`N8N_WEBHOOK_SECRET`, exact `ALLOWED_HOSTS`, and exact `CORS_ALLOWED_ORIGINS`.
 
 #### For Django 
 

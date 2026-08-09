@@ -10,10 +10,10 @@ const api = axios.create({
 
 api.interceptors.request.use(
     (config) => {
-        const token = false
+        const token = sessionStorage.getItem('auth_token')
 
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`
+            config.headers.Authorization = `Token ${token}`
         }
 
         return config
@@ -21,4 +21,15 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 )
 
-export default api;
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            sessionStorage.removeItem('auth_token')
+            window.dispatchEvent(new Event('auth:unauthorized'))
+        }
+        return Promise.reject(error)
+    }
+)
+
+export default api

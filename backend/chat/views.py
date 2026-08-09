@@ -6,6 +6,7 @@ from rest_framework import viewsets, status
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 
 from .serializers import ChatRequestSerializer, ChatResponseSerializer, ChatSerializer
@@ -22,6 +23,12 @@ class ChatViewSet(viewsets.ModelViewSet): # viewsets.ModelViewSet provides autom
     serializer_class = ChatSerializer # links the view to ChatSerializer to auto handle validation and coversion to/from JSON for CRUD operations.
 
     parser_classes = [FormParser, JSONParser] # limits the backend to only accept data sent as standard JSON or URL-encoded forms
+    throttle_scope = 'chat'
+
+    def get_permissions(self):
+        if self.action == 'chat':
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     # action decorator creates a custom routing path inside the ViewSet
     # details=False means this endpoint acts on the whole collection, not a specific chat ID

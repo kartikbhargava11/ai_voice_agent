@@ -7,12 +7,19 @@ from django.utils import timezone
 
 from mysite.observability import request_id, reset_context, set_context
 
-from .models import AutomationJob
+from .models import AutomationJob, AutomationWorkerHeartbeat
 from .services import cancel_calendar_event_with_n8n, sync_lead_to_crm_with_n8n
 from .whatsapp import send_whatsapp_confirmation
 
 
 logger = logging.getLogger('app.jobs')
+
+
+def mark_worker_alive(name='default'):
+    AutomationWorkerHeartbeat.objects.update_or_create(
+        name=name,
+        defaults={'last_seen_at': timezone.now()},
+    )
 
 
 def enqueue_whatsapp_confirmation(appointment):
